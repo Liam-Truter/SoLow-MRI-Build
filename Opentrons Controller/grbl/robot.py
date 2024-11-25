@@ -2,6 +2,19 @@ import numpy as np
 import serial
 import serial.tools.list_ports
 
+class Driver:
+    def __init__(self):
+        self.pos = np.array([0,0,0])
+    def get_head_position(self):
+        position = {'current':{}}
+        axes = ['x', 'y', 'z']
+        
+        for i in range(3):
+            ax = axes[i]
+            position['current'][ax] = self.pos[i]
+        
+        return position
+
 class Robot:
     def __init__(self):
         # Opentrons max dimensions
@@ -10,11 +23,15 @@ class Robot:
         self.zlim = (-150, 100)
 
         # Position in Opentrons coordinates
-        self.pos = np.array([0,0,0])
+        self.pos = np.array([0,250,100])
 
         # Serial connection to gerbl Arduino
         self.serial = serial.Serial()
         self.simulate = False
+
+        # For compatibility with opentrons code
+        self._driver = Driver()
+        self._driver.pos = self.pos
     
     def __del__(self):
         # Close serial connection on object deletion if open
@@ -27,6 +44,7 @@ class Robot:
         if 'x' in axes:
             pos['x'] = min(self.xlim[1], max(self.xlim[0], pos['x']))
             self.pos[0] = pos['x']
+            
         # Constrain y to limits
         if 'y' in axes:
             pos['y'] = min(self.ylim[1], max(self.ylim[0], pos['y']))
@@ -35,7 +53,9 @@ class Robot:
         if 'z' in axes:
             pos['z'] = min(self.zlim[1], max(self.zlim[0], pos['z']))
             self.pos[2] = pos['z']
-        
+
+        self._driver.pos = self.pos
+
         return pos
     
     def _send_cmd(self, cmd):
@@ -51,7 +71,7 @@ class Robot:
         ports = serial.tools.list_ports.comports()
 
         # Check if real connection
-        if port != 'Simulate':
+        if not port in ['Simulate', 'Virtual Smoothie']:
             # If no port is specified, choose first port connected to Arduino
             if port == None:
                 for i in range(len(ports)):
@@ -96,8 +116,9 @@ class Robot:
         # Home all axes
         self._send_cmd('$H')
 
+robot = Robot()
+
 if __name__ == '__main__':
-    robot = Robot()
     robot.connect('Simulate')
     robot.move_head(x=100,y=200, z=-50)
         
