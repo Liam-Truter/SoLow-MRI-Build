@@ -29,7 +29,7 @@ class Robot:
         self.serial = serial.Serial()
         self.simulate = False
 
-        # For compatibility with opentrons code
+        # For compatibility with Opentrons code
         self._driver = Driver()
         self._driver.pos = self.pos
     
