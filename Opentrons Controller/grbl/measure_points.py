@@ -30,9 +30,9 @@ def read_field():
     thm.make_measurement(**params)
     meas = thm.last_reading
     measurements = list(meas.values())
-    Bx = np.array(measurements[0])*10000
-    By = np.array(measurements[1])*10000
-    Bz = np.array(measurements[2])*10000
+    Bx = np.array(measurements[0])*1000
+    By = np.array(measurements[1])*1000
+    Bz = np.array(measurements[2])*1000
 
     return np.array([Bx, By, Bz])
 
