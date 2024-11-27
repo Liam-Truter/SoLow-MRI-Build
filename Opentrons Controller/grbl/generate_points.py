@@ -141,14 +141,29 @@ ax.plot_surface(x_cylinder, y_cylinder, z_cylinder, color="red", alpha=0.3, labe
 
 valid_points = get_valid_points(points[0,0],fitted_center_y, fitted_center_z, fitted_radius, spacing=10)
 
-def save_valid_points_to_csv(points, filename="valid_points.csv"):
+def save_points(points, filename="valid_points.csv"):
     # Save the numpy array of points to a CSV file
     header = "X, Y, Z"  # Add column headers
     np.savetxt(filename, points, delimiter=",", header=header, comments='', fmt='%.3f')
     print(f"Valid points saved to {filename}")
 
 # Save to CSV
-save_valid_points_to_csv(valid_points, filename="valid_points.csv")
+save_points(valid_points, filename="valid_points.csv")
+
+def get_origin(flipped=False):
+    origin = np.array([fitted_center_x, fitted_center_y, fitted_center_z])
+    x_hat = np.array([1,0,0])
+    y_hat = np.array([0,1,0])
+    z_hat = np.array([0,0,1])
+    if flipped:
+        origin[0] = bore_length - origin[0]
+        x_hat = -x_hat
+        y_hat = -y_hat
+
+    return np.array([origin, x_hat, y_hat, z_hat])
+        
+
+save_points(get_origin(), filename="origin_info.csv")
 
 ax.scatter(valid_points[:,0], valid_points[:,1], valid_points[:,2], label="Valid Points", color="red", alpha=0.3)
 ax.set_xlabel("X")
