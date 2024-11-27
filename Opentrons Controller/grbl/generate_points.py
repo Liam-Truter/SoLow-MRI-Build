@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.optimize import least_squares
 
+from calibrator import Calibrator
+from robot import robot
+
 # Bore and Opentrons dimensions
 bore_diameter = 290
 bore_radius = bore_diameter / 2
@@ -62,9 +65,19 @@ def generate_random_points(num_points=10, radius_variance=3):
 
     return np.array(points)
 
+mode='Simulate'
 
-# Generate 200 random points
-points = generate_random_points(num_points=4)
+calibrator = Calibrator()
+
+if mode == 'Simulate':
+    # Generate 200 random points
+    points = generate_random_points(num_points=4)
+else:
+    robot.connect("COM6")
+    robot.home()
+    calibrator.start()
+    points = np.array(calibrator.positions)
+
 
 # Define residual function for cylinder with fixed x-axis
 def cylinder_residuals_fixed_axis(params, points):
@@ -151,12 +164,18 @@ def save_points(points, filename="valid_points.csv"):
 save_points(valid_points, filename="valid_points.csv")
 
 def get_origin(flipped=False):
-    origin = np.array([fitted_center_x, fitted_center_y, fitted_center_z])
+    # Origin position. Geometric center of bore
+    origin = np.array([fitted_center_x + bore_length/2, fitted_center_y, fitted_center_z])
+
+    # Origin orientation
     x_hat = np.array([1,0,0])
     y_hat = np.array([0,1,0])
     z_hat = np.array([0,0,1])
+
+    # If MRI is rotated
     if flipped:
-        origin[0] = bore_length - origin[0]
+        
+        # Orientation is rotated 180 degrees
         x_hat = -x_hat
         y_hat = -y_hat
 
