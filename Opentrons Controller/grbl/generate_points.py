@@ -88,6 +88,7 @@ initial_guess = [initial_center_y, initial_center_z, initial_radius]
 # Optimize the cylinder parameters
 result = least_squares(cylinder_residuals_fixed_axis, initial_guess, args=(points,))
 fitted_params = result.x
+fitted_center_x = points[0,0]
 fitted_center_y = fitted_params[0]
 fitted_center_z = fitted_params[1]
 fitted_radius = fitted_params[2]
@@ -96,6 +97,34 @@ fitted_radius = fitted_params[2]
 print(f"Fitted Cylinder Center (y, z): ({fitted_center_y}, {fitted_center_z})")
 print(f"Fitted Cylinder Radius: {fitted_radius}")
 
+def get_valid_points(x, y, z, r, clearance=5, spacing=1):
+    # Generate X, Y, Z ranges
+    X = np.arange(x, opentrons_x_range[1], 1)[::spacing]
+    range_r = 2 * np.floor(r)
+    Y = np.arange(y - range_r / 2, y + range_r / 2, 1)[::spacing]
+    Z = np.arange(z - range_r / 2, z + range_r / 2, 1)[::spacing]
+    
+    # Create a meshgrid of all possible points
+    X_grid, Y_grid, Z_grid = np.meshgrid(X, Y, Z, indexing='ij')
+    
+    # Flatten grids to a list of points
+    points = np.vstack([X_grid.ravel(), Y_grid.ravel(), Z_grid.ravel()]).T
+    
+    # Calculate radial distances from the bore center
+    bore_center = np.array([x, y, z])  # Center coordinates
+    radial_distances = np.sqrt((points[:, 1] - bore_center[1])**2 + (points[:, 2] - bore_center[2])**2)
+    # Filter points within the bore radius and workspace limits
+    valid_points = points[
+        (radial_distances <= r-clearance) &
+        (opentrons_x_range[0] <= points[:, 0]) & (points[:, 0] <= opentrons_x_range[1]) &
+        (opentrons_y_range[0] <= points[:, 1]) & (points[:, 1] <= opentrons_y_range[1]) &
+        (opentrons_z_range[0] <= points[:, 2]) & (points[:, 2] <= opentrons_z_range[1])
+    ]
+    
+    return valid_points
+
+
+
 # Plot the points and the fitted cylinder
 fig = plt.figure(figsize=(10, 8))
 ax = fig.add_subplot(111, projection="3d")
@@ -103,12 +132,25 @@ ax.scatter(points[:, 0], points[:, 1], points[:, 2], label="Random Points", colo
 
 # Generate cylinder points for visualization
 theta = np.linspace(0, 2 * np.pi, 100)
-x_cylinder = np.linspace(opentrons_x_range[0], opentrons_x_range[1], 50)
+x_cylinder = np.linspace(fitted_center_x, opentrons_x_range[1], 50)
 theta, x_cylinder = np.meshgrid(theta, x_cylinder)
 y_cylinder = fitted_center_y + fitted_radius * np.cos(theta)
 z_cylinder = fitted_center_z + fitted_radius * np.sin(theta)
 
 ax.plot_surface(x_cylinder, y_cylinder, z_cylinder, color="red", alpha=0.3, label="Fitted Cylinder")
+
+valid_points = get_valid_points(points[0,0],fitted_center_y, fitted_center_z, fitted_radius, spacing=10)
+
+def save_valid_points_to_csv(points, filename="valid_points.csv"):
+    # Save the numpy array of points to a CSV file
+    header = "X, Y, Z"  # Add column headers
+    np.savetxt(filename, points, delimiter=",", header=header, comments='', fmt='%.3f')
+    print(f"Valid points saved to {filename}")
+
+# Save to CSV
+save_valid_points_to_csv(valid_points, filename="valid_points.csv")
+
+ax.scatter(valid_points[:,0], valid_points[:,1], valid_points[:,2], label="Valid Points", color="red", alpha=0.3)
 ax.set_xlabel("X")
 ax.set_ylabel("Y")
 ax.set_zlabel("Z")
