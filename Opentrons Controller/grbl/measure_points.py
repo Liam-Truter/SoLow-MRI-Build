@@ -41,7 +41,7 @@ def save_readings(coords, readings, filename):
     data = np.hstack((coords, readings))
     
     # Define column headers
-    headers = "X,Y,Z,Bx,By,Bz"
+    headers = "X[mm],Y[mm],Z[mm],Bx[mT],By[mT],Bz[mT]"
     
     # Save to CSV with headers
     np.savetxt(filename, data, delimiter=",", header=headers, comments="")
