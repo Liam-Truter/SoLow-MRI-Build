@@ -142,8 +142,8 @@ class Calibrator:
 
 def main():
     calibrator = Calibrator()
-    robot.connect('Virtual Smoothie')
-    #robot.home()
+    robot.connect("COM6")
+    robot.home()
     calibrator.start()
     
 
