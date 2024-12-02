@@ -65,12 +65,13 @@ def generate_random_points(num_points=10, radius_variance=3):
 
     return np.array(points)
 
-mode='Simulate'
+#mode = 'Simulate'
+mode = 'Live'
 
 calibrator = Calibrator()
 
 if mode == 'Simulate':
-    # Generate 200 random points
+    # Generate 4 random points
     points = generate_random_points(num_points=4)
 else:
     robot.connect("COM6")

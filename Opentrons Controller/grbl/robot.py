@@ -46,6 +46,9 @@ class Robot:
         self._driver = Driver()
         self._driver.pos = self.pos
 
+        # Wait until command finished
+        self.ok = False
+
     def __del__(self):
         # Close serial connection and stop reading thread on object deletion
         if self.serial.is_open:
@@ -74,7 +77,9 @@ class Robot:
 
         return pos
 
-    def _send_cmd(self, cmd):
+    def _send_cmd(self, cmd, wait_for_ok=True):
+        if wait_for_ok:
+            self.ok = False
         # If simulating, print the sent command
         if self.simulate:
             print(cmd)
@@ -82,6 +87,8 @@ class Robot:
         else:
             self.serial.write(str.encode(cmd + '\n'))
             print('Sent: ' + cmd)
+            while not self.ok and wait_for_ok:
+                pass
 
     def connect(self, port=None):
         # Get available composite ports
@@ -117,6 +124,8 @@ class Robot:
                 try:
                     message = self.serial.readline().decode('utf-8').strip()
                     print(f"Received: {message}")
+                    if message == 'ok':
+                        self.ok = True
                 except Exception as e:
                     print(f"Error reading from serial: {e}")
 
@@ -142,6 +151,9 @@ class Robot:
         if 'z' in axes:
             cnc_z = pos['z'] - self.zlim[1] - 2  # CNC z-axis moves negative in Opentrons coordinates
             gcode += f' Z{cnc_z}'
+
+        # Wait for move to finish
+        gcode += "G4P0"
 
         # Send GCode command
         self._send_cmd(gcode)

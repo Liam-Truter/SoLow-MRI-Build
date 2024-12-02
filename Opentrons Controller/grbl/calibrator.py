@@ -136,7 +136,7 @@ class Calibrator:
         self.move_constrained(z=bot_pos-self.step_size)
 
     def save_position(self):
-        bot_pos = robot._driver.get_head_position()['current'].values()
+        bot_pos = list(robot._driver.get_head_position()['current'].values())
         self.positions.append(bot_pos)
 
 

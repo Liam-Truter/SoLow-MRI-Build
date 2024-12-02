@@ -23,6 +23,10 @@ def connect_probe():
     for key in thm.id_fields:
         print('{}: {}'.format(key, device_id[key]))
 
+def connect_robot():
+    robot.connect("COM6")
+    robot.home()
+
 def move_to(point):
     robot.move_head(x=point[0], y=point[1], z=point[2])
 
@@ -61,11 +65,16 @@ translated_points = valid_points - origin
 true_coordinates = translated_points @ rotation_matrix.T  # Matrix multiplication with the transpose of the rotation matrix
 
 field_vals = np.zeros_like(true_coordinates)
-"""
-for i, target in enumerate(true_coordinates):
+
+connect_robot()
+#connect_probe()
+
+for i in range(len(true_coordinates)):
+    target = valid_points[i]
+    print(target)
     move_to(target)
     time.sleep(1)
-    field_vals[i] = read_field()
-"""
+    #field_vals[i] = read_field()
+
 
 save_readings(true_coordinates, field_vals, "field_readings.csv")
