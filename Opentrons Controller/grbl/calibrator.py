@@ -31,7 +31,7 @@ class Calibrator:
         self.root.bind('<d>', lambda event: self.move_right())
         self.root.bind('<e>', lambda event: self.move_up())
         self.root.bind('<q>', lambda event: self.move_down())
-        self.root.bind('<Enter>', lambda event: self.save_position())
+        #self.root.bind('<Enter>', lambda event: self.save_position())
 
         # Step size radio button list
         self.step_selection = tk.Frame(self.root)
@@ -138,6 +138,7 @@ class Calibrator:
     def save_position(self):
         bot_pos = list(robot._driver.get_head_position()['current'].values())
         self.positions.append(bot_pos)
+        print(f"Saved position: {bot_pos}")
 
 
 def main():
