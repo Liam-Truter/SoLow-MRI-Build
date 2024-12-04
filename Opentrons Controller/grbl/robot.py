@@ -152,11 +152,11 @@ class Robot:
             cnc_z = pos['z'] - self.zlim[1] - 2  # CNC z-axis moves negative in Opentrons coordinates
             gcode += f' Z{cnc_z}'
 
-        # Wait for move to finish
-        gcode += "G4P0"
-
         # Send GCode command
         self._send_cmd(gcode)
+
+        # Wait for move to finish
+        self._send_cmd("G4P0")
 
     def home(self, axes='xyz'):
         # Home all axes
