@@ -22,7 +22,7 @@ class Driver:
 class Robot:
     def __init__(self):
         # Opentrons max dimensions
-        self.xlim = (0, 375)
+        self.xlim = (0, 300)
         self.ylim = (0, 250)
         self.zlim = (-150, 100)
 

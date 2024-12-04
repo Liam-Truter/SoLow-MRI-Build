@@ -144,6 +144,7 @@ class Calibrator:
 def main():
     calibrator = Calibrator()
     robot.connect("COM6")
+    #robot._send_cmd("$x")
     robot.home()
     calibrator.start()
     

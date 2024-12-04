@@ -34,9 +34,9 @@ def read_field():
     thm.make_measurement(**params)
     meas = thm.last_reading
     measurements = list(meas.values())
-    Bx = np.array(measurements[2])*1000
+    Bx = np.array(measurements[0])*1000
     By = np.array(measurements[1])*1000
-    Bz = np.array(measurements[0])*-1000
+    Bz = np.array(measurements[2])*1000
 
     return np.array([Bx, By, Bz]).flatten()
 
@@ -69,7 +69,7 @@ field_vals = np.zeros_like(true_coordinates)
 connect_robot()
 connect_probe()
 
-for i in range(len(true_coordinates[:10])):
+for i in range(len(true_coordinates)):
     target = valid_points[i]
     print(target)
     move_to(target)

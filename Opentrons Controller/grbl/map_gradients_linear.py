@@ -3,8 +3,13 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.optimize import least_squares
 
+import usbtmc as backend
+import pyTHM1176.api.thm_usbtmc_api as thm_api
+
 from calibrator import Calibrator
 from robot import robot
+
+import csv
 
 # Bore and Opentrons dimensions
 bore_diameter = 290
@@ -16,7 +21,7 @@ probe_diameter = 10
 probe_radius = probe_diameter / 2
 
 # Opentrons workspace limits
-opentrons_x_range = (0, 300)
+opentrons_x_range = (0, 375)
 opentrons_y_range = (0, 250)
 opentrons_z_range = (-150, 100)
 
@@ -111,29 +116,36 @@ fitted_radius = fitted_params[2]
 print(f"Fitted Cylinder Center (y, z): ({fitted_center_y}, {fitted_center_z})")
 print(f"Fitted Cylinder Radius: {fitted_radius}")
 
-def get_valid_points(x, y, z, r, clearance=5, spacing=1):
-    # Generate X, Y, Z ranges
-    X = np.arange(x, opentrons_x_range[1], 1)[::spacing]
-    range_r = 2 * np.floor(r)
-    Y = np.arange(y - range_r / 2, y + range_r / 2, 1)[::spacing]
-    Z = np.arange(z - range_r / 2, z + range_r / 2, 1)[::spacing]
+def get_valid_points(x, y, z, quadrant, r, clearance=5, spacing=1):
+    X = np.arange(x, bore_length, 10, dtype=float) + x
+    Y = np.zeros_like(X, dtype=float) + y
+    Z = np.zeros_like(X, dtype=float) + z
+
+    if quadrant == 1:
+        Y -= r/2
+        Z += r/2
+    elif quadrant == 2:
+        Y += r/2
+        Z += r/2
+    elif quadrant == 3:
+        Y += r/2
+        Z -= r/2
+    elif quadrant == 4:
+        Y -= r/2
+        Z -= r/2
     
     # Create a meshgrid of all possible points
     X_grid, Y_grid, Z_grid = np.meshgrid(X, Y, Z, indexing='ij')
     
     # Flatten grids to a list of points
-    points = np.vstack([X_grid.ravel(), Y_grid.ravel(), Z_grid.ravel()]).T
+    points = np.vstack([X, Y, Z]).T
     
     # Calculate radial distances from the bore center
     bore_center = np.array([x, y, z])  # Center coordinates
     radial_distances = np.sqrt((points[:, 1] - bore_center[1])**2 + (points[:, 2] - bore_center[2])**2)
     # Filter points within the bore radius and workspace limits
-    valid_points = points[
-        (radial_distances <= r-clearance) &
-        (opentrons_x_range[0] <= points[:, 0]) & (points[:, 0] <= opentrons_x_range[1]) &
-        (opentrons_y_range[0] <= points[:, 1]) & (points[:, 1] <= opentrons_y_range[1]) &
-        (opentrons_z_range[0] <= points[:, 2]) & (points[:, 2] <= opentrons_z_range[1])
-    ]
+    filter = (radial_distances <= r-clearance) & (opentrons_x_range[0] <= points[:, 0]) & (points[:, 0] <= opentrons_x_range[1]) & (opentrons_y_range[0] <= points[:, 1]) & (points[:, 1] <= opentrons_y_range[1]) & (opentrons_z_range[0] <= points[:, 2]) & (points[:, 2] <= opentrons_z_range[1])
+    valid_points = points[filter]
     
     return valid_points
 
@@ -145,7 +157,7 @@ ax = fig.add_subplot(111, projection="3d")
 ax.scatter(points[:, 0], points[:, 1], points[:, 2], label="Random Points", color="blue", alpha=0.6)
 
 # Generate cylinder points for visualization
-theta = np.linspace(0, 2 * np.pi, 100)
+theta = np.arange(0, 2 * np.pi, 0.314)
 x_cylinder = np.linspace(fitted_center_x, opentrons_x_range[1], 50)
 theta, x_cylinder = np.meshgrid(theta, x_cylinder)
 y_cylinder = fitted_center_y + fitted_radius * np.cos(theta)
@@ -153,39 +165,69 @@ z_cylinder = fitted_center_z + fitted_radius * np.sin(theta)
 
 ax.plot_surface(x_cylinder, y_cylinder, z_cylinder, color="red", alpha=0.3, label="Fitted Cylinder")
 
-valid_points = get_valid_points(points[0,0],fitted_center_y, fitted_center_z, fitted_radius, clearance=50, spacing=30)
+def connect_probe():
+    global params
+    global thm
 
-def save_points(points, filename="valid_points.csv"):
-    # Save the numpy array of points to a CSV file
-    header = "X, Y, Z"  # Add column headers
-    np.savetxt(filename, points, delimiter=",", header=header, comments='', fmt='%.3f')
-    print(f"Valid points saved to {filename}")
+    params = {"trigger_type": "single", 'range': '0.1T', 'average': 30000, 'format': 'ASCII'}
 
-# Save to CSV
-save_points(valid_points, filename="valid_points.csv")
+    thm = thm_api.Thm1176(backend.list_devices()[0], **params)
+    # Get device id string and print output. This can be used to check communications are OK
+    device_id = thm.get_id()
+    for key in thm.id_fields:
+        print('{}: {}'.format(key, device_id[key]))
 
-def get_origin(flipped=False):
-    # Origin position. Geometric center of bore
-    origin = np.array([fitted_center_x + bore_length/2, fitted_center_y, fitted_center_z])
+def connect_robot():
+    robot.connect("COM6")
+    robot.home()
 
-    # Origin orientation
-    x_hat = np.array([1,0,0])
-    y_hat = np.array([0,1,0])
-    z_hat = np.array([0,0,1])
+def move_to(point):
+    robot.move_head(x=point[0], y=point[1], z=point[2])
 
-    # If MRI is rotated
-    if flipped:
-        
-        # Orientation is rotated 180 degrees
-        x_hat = -x_hat
-        y_hat = -y_hat
+def read_field():
+    thm.make_measurement(**params)
+    meas = thm.last_reading
+    measurements = list(meas.values())
+    Bx = np.array(measurements[0])*1000
+    By = np.array(measurements[1])*1000
+    Bz = np.array(measurements[2])*1000
 
-    return np.array([origin, x_hat, y_hat, z_hat])
-        
+    return np.array([Bx, By, Bz]).flatten()
 
-save_points(get_origin(), filename="origin_info.csv")
+connect_probe()
 
-ax.scatter(valid_points[:,0], valid_points[:,1], valid_points[:,2], label="Valid Points", color="red", alpha=0.3)
+points_to_map = {}
+mapped_radii = {}
+readings = {}
+quadrants = [0, 1, 2, 3, 4]
+for i, quadrant in enumerate(quadrants):
+    valid_points = get_valid_points(points[0,0],fitted_center_y, fitted_center_z, quadrant, fitted_radius, clearance=30, spacing=10)
+    
+    points_to_map[quadrant] = valid_points
+    readings[quadrant] = []
+    
+    for i in range(len(valid_points)):
+        move_to(valid_points[i])
+        readings[quadrant].append(read_field())
+    
+    # Prepare the filename based on the angle
+    output_file = f"readings_{int(quadrant)}.csv"
+
+    # Write the data to a CSV file
+    with open(output_file, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        # Write the header
+        writer.writerow(['X', 'Y', 'Z', 'Bx', 'By', 'Bz'])
+
+        # Write each data point
+        for i in range(len(valid_points)):
+            X,Y,Z = valid_points[i]
+            Bx, By, Bz = readings[quadrant][i]
+            writer.writerow([X, Y, Z, Bx, By, Bz])
+
+for quadrant in quadrants:
+    valid_points = points_to_map[quadrant]
+    ax.scatter(valid_points[:,0], valid_points[:,1], valid_points[:,2], label=f"Quadrant {quadrant}", alpha=0.3)
 ax.set_xlabel("X")
 ax.set_ylabel("Y")
 ax.set_zlabel("Z")
