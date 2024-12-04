@@ -3,8 +3,8 @@ from robot import robot
 
 import time
 
-#import usbtmc as backend
-#import pyTHM1176.api.thm_usbtmc_api as thm_api
+import usbtmc as backend
+import pyTHM1176.api.thm_usbtmc_api as thm_api
 
 def read_points(filename):
     # Read the CSV file into a NumPy array
@@ -34,11 +34,11 @@ def read_field():
     thm.make_measurement(**params)
     meas = thm.last_reading
     measurements = list(meas.values())
-    Bx = np.array(measurements[0])*1000
+    Bx = np.array(measurements[2])*1000
     By = np.array(measurements[1])*1000
-    Bz = np.array(measurements[2])*1000
+    Bz = np.array(measurements[0])*-1000
 
-    return np.array([Bx, By, Bz])
+    return np.array([Bx, By, Bz]).flatten()
 
 def save_readings(coords, readings, filename):
     # Horizontally stack the coordinates and readings
@@ -67,14 +67,14 @@ true_coordinates = translated_points @ rotation_matrix.T  # Matrix multiplicatio
 field_vals = np.zeros_like(true_coordinates)
 
 connect_robot()
-#connect_probe()
+connect_probe()
 
-for i in range(len(true_coordinates)):
+for i in range(len(true_coordinates[:10])):
     target = valid_points[i]
     print(target)
     move_to(target)
     time.sleep(1)
-    #field_vals[i] = read_field()
+    field_vals[i,:] = read_field()
 
 
 save_readings(true_coordinates, field_vals, "field_readings.csv")
