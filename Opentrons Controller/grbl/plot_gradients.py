@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 import os
 
 # Define the angles and file naming pattern
-angles = [90, 45, 0, -45]
+angles = [0, 45, 90, 135]
 coil = 'B'
-file_pattern = "Readings\\Gradient coils\\{coil}\\readings_{angle}.csv"
+file_pattern = "Readings Corrected\\Gradient coils\\{coil}\\readings_{angle}.csv"
 
 # Prepare a dictionary to store the data for plotting
 data = {}

@@ -15,7 +15,7 @@ def connect_probe():
     global params
     global thm
 
-    params = {"trigger_type": "single", 'range': '0.1T', 'average': 30000, 'format': 'ASCII'}
+    params = {"trigger_type": "single", 'range': '0.1T', 'average': 300, 'format': 'ASCII'}
 
     thm = thm_api.Thm1176(backend.list_devices()[0], **params)
     # Get device id string and print output. This can be used to check communications are OK
@@ -34,9 +34,9 @@ def read_field():
     thm.make_measurement(**params)
     meas = thm.last_reading
     measurements = list(meas.values())
-    Bx = np.array(measurements[0])*1000
-    By = np.array(measurements[1])*1000
-    Bz = np.array(measurements[2])*1000
+    Bx = np.array(measurements[2])*1000
+    By = np.array(measurements[1])*-1000
+    Bz = np.array(measurements[0])*1000
 
     return np.array([Bx, By, Bz]).flatten()
 
@@ -73,7 +73,7 @@ for i in range(len(true_coordinates)):
     target = valid_points[i]
     print(target)
     move_to(target)
-    time.sleep(1)
+    time.sleep(0.1)
     field_vals[i,:] = read_field()
 
 

@@ -10,6 +10,7 @@ from calibrator import Calibrator
 from robot import robot
 
 import csv
+import time
 
 # Bore and Opentrons dimensions
 bore_diameter = 290
@@ -174,12 +175,13 @@ def move_to(point):
     robot.move_head(x=point[0], y=point[1], z=point[2])
 
 def read_field():
+    time.sleep(1)
     thm.make_measurement(**params)
     meas = thm.last_reading
     measurements = list(meas.values())
-    Bx = np.array(measurements[0])*1000
-    By = np.array(measurements[1])*1000
-    Bz = np.array(measurements[2])*1000
+    Bx = np.array(measurements[2])*1000
+    By = np.array(measurements[1])*-1000
+    Bz = np.array(measurements[0])*1000
 
     return np.array([Bx, By, Bz]).flatten()
 

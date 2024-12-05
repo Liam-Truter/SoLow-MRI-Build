@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 
 # Load the data from the CSV file
-file_path = "Readings\\Gradient coils\\D\\field_readings.csv"  # Replace with your actual file path
+file_path = "Readings Corrected\\Gradient coils\\D\\field_readings.csv"  # Replace with your actual file path
 data = pd.read_csv(file_path)
 
 # Extract coordinates and magnetic field components
@@ -30,13 +30,15 @@ ax1 = fig1.add_subplot(111, projection='3d')
 quiver = ax1.quiver(
     X, Y, Z,
     Bx_normalized, By_normalized, Bz_normalized,
-    length=5,  # Arrow length
+    length=10,  # Arrow length
     normalize=False,
     cmap='viridis',
-    linewidth=0.5,
+    linewidth=1,
     alpha=0.8,
     arrow_length_ratio=0.2  # Adjust arrowhead size
 )
+
+#ax1.scatter(X,Y,Z)
 
 # Set labels
 ax1.set_xlabel("X")
@@ -50,26 +52,26 @@ ax2 = fig2.add_subplot(111, projection='3d')
 
 scatter = ax2.scatter(
     X, Y, Z,
-    c=Bx,  # Use Bx as the color value
-    cmap='coolwarm',  # Use a diverging colormap for Bx
+    c=Bz,  # Use Bz as the color value
+    cmap='viridis',  # Use a diverging colormap for Bz
     s=50,  # Size of points
     alpha=0.7,
-    label="Bx Component"
+    label="Bz Component"
 )
 
 # Add color bar for the scatter plot
 cbar = fig2.colorbar(scatter, ax=ax2, pad=0.1)
-cbar.set_label('Bx Component (mT)')
+cbar.set_label('Bz Component (mT)')
 
 # Set labels
 ax2.set_xlabel("X")
 ax2.set_ylabel("Y")
 ax2.set_zlabel("Z")
-ax2.set_title("Bx Component Scatter Plot")
+ax2.set_title("Bz Component Scatter Plot")
 
 # Stack coordinates into a matrix
 A = np.vstack([X, Y, Z, np.ones_like(X)]).T  # [X, Y, Z, 1] matrix
-B = Bx  # Target values (Bx)
+B = Bz  # Target values (Bz)
 
 # Solve for coefficients [a, b, c, d] using least squares
 coefficients, residuals, rank, s = np.linalg.lstsq(A, B, rcond=None)
