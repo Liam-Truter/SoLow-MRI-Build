@@ -1,9 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 
 # Load the data from the CSV file
-file_path = "field_readings.csv"  # Replace with your actual file path
+file_path = "Readings\\Gradient coils\\D\\field_readings.csv"  # Replace with your actual file path
 data = pd.read_csv(file_path)
 
 # Extract coordinates and magnetic field components
@@ -66,5 +67,23 @@ ax2.set_ylabel("Y")
 ax2.set_zlabel("Z")
 ax2.set_title("Bx Component Scatter Plot")
 
-# Show the plots
+# Stack coordinates into a matrix
+A = np.vstack([X, Y, Z, np.ones_like(X)]).T  # [X, Y, Z, 1] matrix
+B = Bx  # Target values (Bx)
+
+# Solve for coefficients [a, b, c, d] using least squares
+coefficients, residuals, rank, s = np.linalg.lstsq(A, B, rcond=None)
+a, b, c, d = coefficients
+
+# Gradient vector (a, b, c)
+gradient_vector = np.array([a, b, c])
+
+# Normalize the gradient vector
+gradient_direction = gradient_vector / np.linalg.norm(gradient_vector)
+
+# Output results
+print("Gradient Vector (Unnormalized):", gradient_vector)
+print("Gradient Direction (Normalized):", gradient_direction)
+
+# Show the plot
 plt.show()
