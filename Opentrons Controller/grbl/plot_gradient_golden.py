@@ -15,6 +15,15 @@ Bx = data['Bx[mT]'].values
 By = data['By[mT]'].values
 Bz = data['Bz[mT]'].values
 
+# Filter data where X > -150
+mask = X > -150
+X = X[mask]
+Y = Y[mask]
+Z = Z[mask]
+Bx = Bx[mask]
+By = By[mask]
+Bz = Bz[mask]
+
 # Calculate the magnitude of the magnetic field
 B_magnitude = np.sqrt(Bx**2 + By**2 + Bz**2)
 

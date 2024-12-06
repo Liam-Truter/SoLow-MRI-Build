@@ -11,8 +11,8 @@ def transform_columns(input_file, output_file):
         'Y[mm]': data['Z[mm]'],           # Y = Z
         'Z[mm]': -data['Y[mm]'],          # Z = -Y
         'Bx[mT]': data['Bz[mT]'],         # Bx = Bz
-        'By[mT]': data['Bz[mT]'],        # By = -By
-        'Bz[mT]': data['By[mT]']          # Bz = Bx
+        'By[mT]': data['Bx[mT]'],         # By = Bx
+        'Bz[mT]': data['By[mT]']          # Bz = By
     })
 
 
