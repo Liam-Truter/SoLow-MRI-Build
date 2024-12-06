@@ -52,6 +52,7 @@ def save_readings(coords, readings, filename):
 
 # Get valid points and origin info from latest read
 valid_points = read_points("valid_points.csv")
+#valid_points = valid_points[valid_points[:,0]>150]
 origin_info = read_points("origin_info.csv")
 
 # Extract origin and orientation from origin_info
@@ -69,12 +70,15 @@ field_vals = np.zeros_like(true_coordinates)
 connect_robot()
 connect_probe()
 
+robot.move_head(y=valid_points[0,1], z=valid_points[0,2])
+
 for i in range(len(true_coordinates)):
     target = valid_points[i]
     print(target)
     move_to(target)
     time.sleep(0.1)
     field_vals[i,:] = read_field()
+    print(f"Measured field: \t{field_vals[i,0]:.3f}\t{field_vals[i,1]:.3f}\t{field_vals[i,2]:.3f}")
 
 
 save_readings(true_coordinates, field_vals, "field_readings.csv")
