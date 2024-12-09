@@ -15,7 +15,7 @@ def connect_probe():
     global params
     global thm
 
-    params = {"trigger_type": "single", 'range': '0.1T', 'average': 300, 'format': 'ASCII'}
+    params = {"trigger_type": "single", 'range': '0.1T', 'average': 30000, 'format': 'ASCII'}
 
     thm = thm_api.Thm1176(backend.list_devices()[0], **params)
     # Get device id string and print output. This can be used to check communications are OK

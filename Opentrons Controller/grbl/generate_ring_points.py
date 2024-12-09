@@ -64,7 +64,7 @@ print(f"Fitted Cylinder Radius: {fitted_radius}")
 def get_valid_points(x, y, z, r, clearance=5, spacing=1):
     # Generate X, Y, Z ranges
     R = r - clearance
-    theta = np.arange(0,2*np.pi, np.pi/12)
+    theta = np.arange(0,2*np.pi, np.pi/36)
 
     X = np.zeros_like(theta) + x
     Y = -R * np.cos(theta) + y
@@ -98,7 +98,7 @@ z_cylinder = fitted_center_z + fitted_radius * np.sin(theta)
 
 ax.plot_surface(x_cylinder, y_cylinder, z_cylinder, color="red", alpha=0.3, label="Fitted Cylinder")
 
-valid_points = get_valid_points(points[0,0],fitted_center_y, fitted_center_z, fitted_radius, clearance=20, spacing=10)
+valid_points = get_valid_points(points[0,0],fitted_center_y, fitted_center_z, fitted_radius, clearance=80, spacing=10)
 
 def save_points(points, filename="valid_points.csv"):
     # Save the numpy array of points to a CSV file
