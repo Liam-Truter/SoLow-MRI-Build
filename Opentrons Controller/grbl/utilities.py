@@ -169,6 +169,9 @@ def get_valid_points_cartesian(x, y, z, r, l=bore_length, clearance=20, spacing=
     X = np.arange(opentrons_x_range[0], opentrons_x_range[1], spacing)
     Y = np.arange(opentrons_y_range[0], opentrons_y_range[1], spacing)
     Z = np.arange(opentrons_z_range[0], opentrons_z_range[1], spacing)
+
+    # Only points inside bore length
+    X = X[linear_distance(X,x) <= l/2]
     
     # Create a meshgrid of all possible points
     X_grid, Y_grid, Z_grid = np.meshgrid(X, Y, Z, indexing='ij')

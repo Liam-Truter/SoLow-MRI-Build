@@ -2,6 +2,9 @@ from robot import robot
 import tkinter as tk
 import numpy as np
 
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D  # Required for 3D plotting
+
 import utilities
 
 class App:
@@ -37,6 +40,7 @@ class App:
         self._setup_position_save()
         self._setup_bore_settings()
         self._setup_generate_points()
+        self._setup_visualize_points_button()
 
         self.root.mainloop()
 
@@ -85,7 +89,8 @@ class App:
     def _setup_position_save(self):
         frame_ps = tk.Frame(self.root)
         frame_ps.pack(pady=10)
-        tk.Button(frame_ps, text="Save Position", command=self.save_position).pack()
+        tk.Button(frame_ps, text="Add Position", command=self.add_position).grid(row=0, column=0,padx=5)
+        tk.Button(frame_ps, text="Save Positions", command=self.save_positions).grid(row=0, column=1,padx=5)
 
     def _setup_bore_settings(self):
         frame_settings = tk.Frame(self.root)
@@ -113,6 +118,11 @@ class App:
         frame_generate = tk.Frame(self.root)
         frame_generate.pack(pady=10)
         tk.Button(frame_generate, text="Generate Points", command=self.generate_points).pack()
+
+    def _setup_visualize_points_button(self):
+        frame_vis = tk.Frame(self.root)
+        frame_vis.pack(pady=10)
+        tk.Button(frame_vis, text="Visualize Points", command=self.visualize_points).pack()
 
     def increase_step(self):
         self.step_size_idx = min(len(self.step_sizes) - 1, self.step_size_idx + 1)
@@ -152,12 +162,12 @@ class App:
         pos = [0,0,-self.step_size]
         utilities.move_relative(pos)
 
-    def save_position(self):
+    def add_position(self):
         bot_pos = utilities.get_position()
         self.positions.append(bot_pos)
         print(f"Saved position: {bot_pos}")
 
-    def save_positions_to_csv(self):
+    def save_positions(self):
         # Save calibration points to a CSV file
         utilities.save_points("calibration_points.csv", self.positions)
 
@@ -167,7 +177,7 @@ class App:
         fitted_params = utilities.fit_cylinder(points)
 
         # Generate valid points
-        x_origin = np.mean(points[:, 0])
+        x_origin = np.mean(points[:, 0]) + self.bore_depth/2
         y_origin = fitted_params[0]
         z_origin = fitted_params[1]
         radius = fitted_params[2]
@@ -184,6 +194,29 @@ class App:
         # Save valid points to CSV
         utilities.save_points("valid_points.csv", self.valid_points)
         print("Valid points saved to valid_points.csv")
+    
+    def visualize_points(self):
+        if self.valid_points is None or len(self.valid_points) == 0:
+            print("No valid points to visualize!")
+            return
+
+        # Create a Matplotlib 3D plot
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        
+        # Unpack points
+        x, y, z = self.valid_points[:, 0], self.valid_points[:, 1], self.valid_points[:, 2]
+        
+        # Plot the points
+        ax.scatter(x, y, z, c='blue', marker='o', s=10)
+
+        # Set axis labels
+        ax.set_xlabel('X [mm]')
+        ax.set_ylabel('Y [mm]')
+        ax.set_zlabel('Z [mm]')
+        
+        ax.set_title('Valid Points Visualization')
+        plt.show()
 
 
 def main():
