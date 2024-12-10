@@ -5,8 +5,12 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 
 # Load the data from the CSV file
-file_path = "Readings Corrected\\Gradient coils\\D\\02\\field_readings.csv"  # Replace with your actual file path
+file_path = "Readings Corrected\\Gradient Coils\\D\\02\\Gy\\field_readings.csv"  # Replace with your actual file path
 data = pd.read_csv(file_path)
+
+target_gradients=[[0.5774,  0.8165,  0],
+                  [0.5774, -0.4082, -0.7071],
+                  [0.5774, -0.4082,  0.7071]]
 
 # Extract coordinates and magnetic field components
 X = data['X[mm]'].values
@@ -80,7 +84,7 @@ ax2.set_zlabel("Z")
 ax2.set_title("Actual Bz Component Scatter Plot")
 
 # Expected field given OSI2 gradient from Matlab files
-Bz_expected = 0.5774 * X + 0.8165 * Y
+Bz_expected = target_gradients[1][0]*X + target_gradients[1][1]*Y + target_gradients[1][2]*Z
 
 # Reshape Bz_expected for linear regression (needs 2D array for sklearn)
 Bz_expected_reshaped = Bz_expected.reshape(-1, 1)

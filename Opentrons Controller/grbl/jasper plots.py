@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Load the CSV file
-file_path = "field_readings.csv"  # Replace with your file path
+file_path = "Readings\\Magnets\\Kian Halbach\\field_readings.csv"  # Replace with your file path
 data = pd.read_csv(file_path)
 
 # Extract the relevant data
