@@ -86,7 +86,7 @@ class Robot:
         # If live connection, send command over serial
         else:
             self.serial.write(str.encode(cmd + '\n'))
-            print('Sent: ' + cmd)
+            #print('Sent: ' + cmd)
             while not self.ok and wait_for_ok:
                 pass
 
@@ -123,7 +123,7 @@ class Robot:
             if self.serial.is_open and self.serial.in_waiting > 0:
                 try:
                     message = self.serial.readline().decode('utf-8').strip()
-                    print(f"Received: {message}")
+                    #print(f"Received: {message}")
                     if message == 'ok':
                         self.ok = True
                 except Exception as e:
