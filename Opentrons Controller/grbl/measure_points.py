@@ -52,7 +52,7 @@ def save_readings(coords, readings, filename):
 
 # Get valid points and origin info from latest read
 valid_points = read_points("valid_points.csv")
-#valid_points = valid_points[valid_points[:,0]>150]
+valid_points = valid_points[valid_points[:,0]>150]
 origin_info = read_points("origin_info.csv")
 
 # Extract origin and orientation from origin_info
