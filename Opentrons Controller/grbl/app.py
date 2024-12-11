@@ -190,10 +190,29 @@ class App:
             l=self.bore_depth,
             spacing=self.spacing
         )
-
+        
         # Save valid points to CSV
         utilities.save_points("valid_points.csv", self.valid_points)
         print("Valid points saved to valid_points.csv")
+
+        # Origin position. Geometric center of bore
+        origin = np.array([x_origin, y_origin, z_origin])
+
+        # Origin orientation
+        x_hat = np.array([1,0,0])
+        y_hat = np.array([0,1,0])
+        z_hat = np.array([0,0,1])
+
+        # Handle rotated case
+        rotated = False
+
+        if rotated:
+            # Orientation is rotated 180 degrees
+            x_hat = -x_hat
+            y_hat = -y_hat
+
+        origin_info = np.array([origin, x_hat, y_hat, z_hat])
+        utilities.save_points("origin_info.csv",origin_info)
     
     def visualize_points(self):
         if self.valid_points is None or len(self.valid_points) == 0:
