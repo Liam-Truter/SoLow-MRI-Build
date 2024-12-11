@@ -6,54 +6,12 @@ import time
 import usbtmc as backend
 import pyTHM1176.api.thm_usbtmc_api as thm_api
 
-def read_points(filename):
-    # Read the CSV file into a NumPy array
-    points = np.loadtxt(filename, delimiter=",", skiprows=1)  # Skip the header row
-    return points
-
-def connect_probe():
-    global params
-    global thm
-
-    params = {"trigger_type": "single", 'range': '0.1T', 'average': 30000, 'format': 'ASCII'}
-
-    thm = thm_api.Thm1176(backend.list_devices()[0], **params)
-    # Get device id string and print output. This can be used to check communications are OK
-    device_id = thm.get_id()
-    for key in thm.id_fields:
-        print('{}: {}'.format(key, device_id[key]))
-
-def connect_robot():
-    robot.connect("COM6")
-    robot.home()
-
-def move_to(point):
-    robot.move_head(x=point[0], y=point[1], z=point[2])
-
-def read_field():
-    thm.make_measurement(**params)
-    meas = thm.last_reading
-    measurements = list(meas.values())
-    Bx = np.array(measurements[2])*1000
-    By = np.array(measurements[1])*-1000
-    Bz = np.array(measurements[0])*1000
-
-    return np.array([Bx, By, Bz]).flatten()
-
-def save_readings(coords, readings, filename):
-    # Horizontally stack the coordinates and readings
-    data = np.hstack((coords, readings))
-    
-    # Define column headers
-    headers = "X[mm],Y[mm],Z[mm],Bx[mT],By[mT],Bz[mT]"
-    
-    # Save to CSV with headers
-    np.savetxt(filename, data, delimiter=",", header=headers, comments="")
+import utilities
 
 # Get valid points and origin info from latest read
-valid_points = read_points("valid_points.csv")
-valid_points = valid_points[valid_points[:,0]>150]
-origin_info = read_points("origin_info.csv")
+valid_points = utilities.read_points("valid_points.csv")
+#valid_points = valid_points[valid_points[:,0]>150]
+origin_info = utilities.read_points("origin_info.csv")
 
 # Extract origin and orientation from origin_info
 origin = origin_info[0]  # The origin position
@@ -67,18 +25,18 @@ true_coordinates = translated_points @ rotation_matrix.T  # Matrix multiplicatio
 
 field_vals = np.zeros_like(true_coordinates)
 
-connect_robot()
-connect_probe()
+utilities.connect_robot()
+utilities.connect_probe()
 
 robot.move_head(y=valid_points[0,1], z=valid_points[0,2])
 
 for i in range(len(true_coordinates)):
     target = valid_points[i]
     print(target)
-    move_to(target)
+    utilities.move_to(target)
     time.sleep(0.1)
-    field_vals[i,:] = read_field()
+    field_vals[i,:] = utilities.read_field()
     print(f"Measured field: \t{field_vals[i,0]:.3f}\t{field_vals[i,1]:.3f}\t{field_vals[i,2]:.3f}")
 
 
-save_readings(true_coordinates, field_vals, "field_readings.csv")
+utilities.save_readings(true_coordinates, field_vals, "field_readings.csv")

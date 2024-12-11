@@ -1,5 +1,6 @@
 from robot import robot
 import tkinter as tk
+from tkinter import ttk
 import numpy as np
 
 import matplotlib.pyplot as plt
@@ -32,6 +33,9 @@ class App:
         # Variable for radio button
         self.step_var = tk.IntVar()
         self.step_var.set(self.step_size_idx)
+
+        # Variable for shape settings
+        self.selected_shape = tk.StringVar(value="cuboid")
 
         # Setup GUI components
         self._setup_key_bindings()
@@ -91,6 +95,7 @@ class App:
         frame_ps.pack(pady=10)
         tk.Button(frame_ps, text="Add Position", command=self.add_position).grid(row=0, column=0,padx=5)
         tk.Button(frame_ps, text="Save Positions", command=self.save_positions).grid(row=0, column=1,padx=5)
+        tk.Button(frame_ps, text="Load Positions", command=self.load_positions).grid(row=0, column=2,padx=5)
 
     def _setup_bore_settings(self):
         frame_settings = tk.Frame(self.root)
@@ -113,6 +118,64 @@ class App:
         self.spacing_entry = tk.Entry(frame_settings)
         self.spacing_entry.insert(0, str(self.spacing))
         self.spacing_entry.grid(row=2, column=1)
+
+        # Dropdown menu for selecting shape
+        shape_menu = ttk.Combobox(
+            frame_settings, textvariable=self.selected_shape, state="readonly"
+        )
+        shape_menu["values"] = ["cuboid", "cylinder", "sphere"]
+        shape_menu.bind("<<ComboboxSelected>>", self._update_settings)
+        shape_menu.grid(row=3, column=0, columnspan=2,pady=10)
+
+        # Frame to hold the shape-specific settings
+        self.shape_settings_frame = tk.Frame(frame_settings)
+        self.shape_settings_frame.grid(row=4, column=0, columnspan=2,pady=10)
+
+        # Initialize with cuboid settings
+        self._create_cuboid_settings()
+
+    def _clear_settings(self):
+        for widget in self.shape_settings_frame.winfo_children():
+            widget.destroy()
+
+    def _create_cuboid_settings(self):
+        tk.Label(self.shape_settings_frame, text="Length:").grid(row=0, column=0, padx=5, pady=5)
+        self.length_entry = tk.Entry(self.shape_settings_frame)
+        self.length_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        tk.Label(self.shape_settings_frame, text="Width:").grid(row=1, column=0, padx=5, pady=5)
+        self.width_entry = tk.Entry(self.shape_settings_frame)
+        self.width_entry.grid(row=1, column=1, padx=5, pady=5)
+
+        tk.Label(self.shape_settings_frame, text="Height:").grid(row=2, column=0, padx=5, pady=5)
+        self.height_entry = tk.Entry(self.shape_settings_frame)
+        self.height_entry.grid(row=2, column=1, padx=5, pady=5)
+
+    def _create_cylinder_settings(self):
+        tk.Label(self.shape_settings_frame, text="Length:").grid(row=0, column=0, padx=5, pady=5)
+        self.length_entry = tk.Entry(self.shape_settings_frame)
+        self.length_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        tk.Label(self.shape_settings_frame, text="Radius:").grid(row=1, column=0, padx=5, pady=5)
+        self.radius_entry = tk.Entry(self.shape_settings_frame)
+        self.radius_entry.grid(row=1, column=1, padx=5, pady=5)
+
+    def _create_sphere_settings(self):
+        tk.Label(self.shape_settings_frame, text="Radius:").grid(row=0, column=0, padx=5, pady=5)
+        self.radius_entry = tk.Entry(self.shape_settings_frame)
+        self.radius_entry.grid(row=0, column=1, padx=5, pady=5)
+
+    def _update_settings(self, event):
+        self._clear_settings()
+
+        shape = self.selected_shape.get()
+        if shape == "cuboid":
+            self._create_cuboid_settings()
+        elif shape == "cylinder":
+            self._create_cylinder_settings()
+        elif shape == "sphere":
+            self._create_sphere_settings()
+
 
     def _setup_generate_points(self):
         frame_generate = tk.Frame(self.root)
@@ -171,6 +234,10 @@ class App:
         # Save calibration points to a CSV file
         utilities.save_points("calibration_points.csv", self.positions)
 
+    def load_positions(self):
+        # Load calibration points from a CSV file
+        self.positions = utilities.read_points("calibration_points.csv")
+
     def generate_points(self):
         # Fit a cylinder to the saved positions
         points = np.array(self.positions)
@@ -187,13 +254,9 @@ class App:
             y=y_origin,
             z=z_origin,
             r=radius,
-            l=self.bore_depth,
-            spacing=self.spacing
+            l=float(self.bore_depth_entry.get()),
+            spacing=float(self.spacing_entry.get())
         )
-        
-        # Save valid points to CSV
-        utilities.save_points("valid_points.csv", self.valid_points)
-        print("Valid points saved to valid_points.csv")
 
         # Origin position. Geometric center of bore
         origin = np.array([x_origin, y_origin, z_origin])
@@ -210,6 +273,35 @@ class App:
             # Orientation is rotated 180 degrees
             x_hat = -x_hat
             y_hat = -y_hat
+        
+        shape = self.selected_shape.get()
+
+        if shape == "cuboid":
+            self.valid_points = utilities.points_in_cuboid(self.valid_points,
+                                                           x_origin,
+                                                           y_origin,
+                                                           z_origin,
+                                                           float(self.length_entry.get()),
+                                                           float(self.width_entry.get()),
+                                                           float(self.height_entry.get()))
+        elif shape == "cylinder":
+            self.valid_points = utilities.points_in_cylinder(self.valid_points,
+                                                             x_origin,
+                                                             y_origin,
+                                                             z_origin,
+                                                             float(self.radius_entry.get()),
+                                                             float(self.length_entry.get()))
+        elif shape == "sphere":
+            self.valid_points = utilities.points_in_cylinder(self.valid_points,
+                                                             x_origin,
+                                                             y_origin,
+                                                             z_origin,
+                                                             float(self.radius_entry.get()))
+        
+
+        # Save valid points to CSV
+        utilities.save_points("valid_points.csv", self.valid_points)
+        print("Valid points saved to valid_points.csv")
 
         origin_info = np.array([origin, x_hat, y_hat, z_hat])
         utilities.save_points("origin_info.csv",origin_info)
